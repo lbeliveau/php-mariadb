@@ -11,7 +11,18 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: local-path
+  storageClassName: general
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-init
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS employees;
+    USE employees; CREATE TABLE employees (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(100), age INT, department VARCHAR(50), salary DECIMAL(10,2), hire_date DATE);
+    USE employees; INSERT INTO employees (name, age, department, salary, hire_date) VALUES ('John Doe', 30, 'HR', 50000.00, '2022-05-10'), ('Jane Smith', 28, 'IT', 70000.00, '2021-09-15'), ('Alice Johnson', 35, 'Finance', 80000.00, '2019-11-20'), ('Bob Williams', 40, 'Marketing', 60000.00, '2018-07-03'), ('Charlie Brown', 25, 'IT', 55000.00, '2023-01-10');
+    USE employees; INSERT INTO employees (name, age, department, salary, hire_date) VALUES ('John Doe', 30, 'HR', 50000.00, '2022-05-10'), ('Jane Smith', 28, 'IT', 70000.00, '2021-09-15'), ('Alice Johnson', 35, 'Finance', 80000.00, '2019-11-20'), ('Bob Williams', 40, 'Marketing', 60000.00, '2018-07-03'), ('Charlie Brown', 25, 'IT', 55000.00, '2023-01-10');
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,10 +49,15 @@ spec:
         volumeMounts:
           - mountPath: /var/lib/mysql
             name: mariadb-storage
+          - mountPath: /docker-entrypoint-initdb.d
+            name: init-scripts
       volumes:
       - name: mariadb-storage
         persistentVolumeClaim:
           claimName: pvc-mariadb
+      - name: init-scripts
+        configMap:
+          name: mariadb-init
 ---
 apiVersion: v1
 kind: Service
@@ -95,5 +111,5 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30080
+      nodePort: 31080
 
